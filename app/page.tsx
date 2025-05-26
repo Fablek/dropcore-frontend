@@ -2,6 +2,8 @@ import { HeroHome } from "@/components/landing/hero";
 import { Pricing } from "@/components/landing/pricing";
 import { WhySection } from "@/components/landing/why-section";
 import { ComparisonSection } from "@/components/landing/comparison-section";
+import { Faq } from "@/components/landing/faq";
+import { TestimonialsSlider } from "@/components/landing/testimonials-slider";
 
 export default function Home() {
   return (
@@ -10,6 +12,8 @@ export default function Home() {
       <WhySection />
       <ComparisonSection />
       <Pricing />
+      <TestimonialsSlider />
+      <Faq />
     </section>
   );
 }
