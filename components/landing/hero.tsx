@@ -7,7 +7,7 @@ import { GithubIcon } from "@/components/icons";
 
 export function HeroHome() {
   return (
-    <>
+    <section className="flex flex-col gap-3 items-center justify-center">
       <div className="inline-block max-w-xl text-center justify-center">
         <span className={title()}>DropCore&nbsp;</span>
         <span className={title({ color: "violet" })}>gives you&nbsp;</span>
@@ -39,6 +39,6 @@ export function HeroHome() {
           GitHub
         </Link>
       </div>
-    </>
+    </section>
   );
 }
