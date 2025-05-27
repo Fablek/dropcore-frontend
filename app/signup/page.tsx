@@ -134,6 +134,8 @@ export default function SignupPage() {
             name="country"
             placeholder="Select country"
           >
+            <SelectItem key="pl">Poland</SelectItem>
+            <SelectItem key="de">Germany</SelectItem>
             <SelectItem key="ar">Argentina</SelectItem>
             <SelectItem key="us">United States</SelectItem>
             <SelectItem key="ca">Canada</SelectItem>
