@@ -8,7 +8,7 @@ import { Checkbox } from "@heroui/checkbox";
 
 import { Button } from "@heroui/button";
 
-export default function RegisterPage() {
+export default function SignupPage() {
   const [password, setPassword] = React.useState("");
   const [submitted, setSubmitted] = React.useState(null);
   const [errors, setErrors] = React.useState({});
