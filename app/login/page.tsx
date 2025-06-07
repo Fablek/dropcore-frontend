@@ -5,10 +5,32 @@ import { Form } from "@heroui/form";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
+import { Spinner } from "@heroui/spinner";
+
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LoginPage() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.push("/profile");
+    }
+  }, [isAuthenticated, loading]);
+
   const [password, setPassword] = React.useState("");
   const [errors, setErrors] = React.useState({});
+
+  if (loading || isAuthenticated) {
+    return (
+      <div className="py-32">
+        <Spinner color="default" />
+      </div>
+    );
+  }
 
   const getPasswordError = (value: string) => {
     if (!value || value.trim() === "") {

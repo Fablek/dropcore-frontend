@@ -6,12 +6,34 @@ import { Select, SelectItem } from "@heroui/select";
 import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
 import { Button } from "@heroui/button";
-import { addToast } from "@heroui/toast"; // ⬅️ Dodaj to
+import { addToast } from "@heroui/toast";
+import { Spinner } from "@heroui/spinner";
+
+import { useAuth } from "@/app/context/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function SignupPage() {
+  const { isAuthenticated, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.push("/profile");
+    }
+  }, [isAuthenticated, loading]);
+
   const [password, setPassword] = React.useState("");
   const [submitted, setSubmitted] = React.useState(null);
   const [errors, setErrors] = React.useState({});
+
+  if (loading || isAuthenticated) {
+    return (
+      <div className="py-32">
+        <Spinner color="default" />
+      </div>
+    );
+  }
 
   const getPasswordError = (value) => {
     if (value.length < 4) return "Password must be 4 characters or more";
