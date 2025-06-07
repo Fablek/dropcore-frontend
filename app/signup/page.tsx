@@ -46,7 +46,7 @@ export default function SignupPage() {
         body: JSON.stringify({
           email: data.email,
           username: data.name,
-          passwordHash: data.password,
+          password: data.password,
         }),
       });
 
@@ -174,12 +174,6 @@ export default function SignupPage() {
             </Button>
           </div>
         </div>
-
-        {submitted && (
-          <div className="text-small text-default-500 mt-4">
-            Submitted data: <pre>{JSON.stringify(submitted, null, 2)}</pre>
-          </div>
-        )}
       </Form>
     </section>
   );

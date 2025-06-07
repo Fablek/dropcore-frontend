@@ -4,32 +4,30 @@ import React from "react";
 import { Form } from "@heroui/form";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
+import { addToast } from "@heroui/toast";
 
 export default function LoginPage() {
   const [password, setPassword] = React.useState("");
-  const [submitted, setSubmitted] = React.useState(null);
   const [errors, setErrors] = React.useState({});
 
-  const getPasswordError = (value) => {
+  const getPasswordError = (value: string) => {
     if (!value || value.trim() === "") {
       return "Please enter your password";
     }
     return null;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
 
-    const newErrors = {};
+    const newErrors: any = {};
 
-    // Email
-    if (!data.email || !data.email.includes("@")) {
+    if (!data.email || !data.email.toString().includes("@")) {
       newErrors.email = "Please enter a valid email address";
     }
 
-    // Password
-    const passwordError = getPasswordError(data.password);
+    const passwordError = getPasswordError(data.password as string);
     if (passwordError) {
       newErrors.password = passwordError;
     }
@@ -40,7 +38,37 @@ export default function LoginPage() {
     }
 
     setErrors({});
-    setSubmitted(data);
+
+    try {
+      const res = await fetch("http://localhost:5001/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      if (!res.ok) {
+        const msg = await res.text();
+        throw new Error(msg || "Login failed");
+      }
+
+      const result = await res.json();
+      localStorage.setItem("token", result.token);
+
+      addToast({
+        title: "Logged in successfully! 🎉",
+        color: "success",
+      });
+    } catch (err: any) {
+      addToast({
+        title: err.message,
+        color: "danger",
+      });
+    }
   };
 
   return (
@@ -50,14 +78,12 @@ export default function LoginPage() {
           Welcome Back
         </h1>
         <p className="md:text-lg lg:text-xl text-default-600">
-          Log in to your account and pick up where you left off. Your next
-          chapter starts here.
+          Log in to your account and pick up where you left off.
         </p>
       </div>
       <Form
         className="w-full justify-center items-center space-y-4"
         validationErrors={errors}
-        onReset={() => setSubmitted(null)}
         onSubmit={onSubmit}
       >
         <div className="flex flex-col gap-4 max-w-md w-full">
@@ -97,12 +123,6 @@ export default function LoginPage() {
             </Button>
           </div>
         </div>
-
-        {submitted && (
-          <div className="text-small text-default-500 mt-4">
-            Submitted data: <pre>{JSON.stringify(submitted, null, 2)}</pre>
-          </div>
-        )}
       </Form>
     </section>
   );
