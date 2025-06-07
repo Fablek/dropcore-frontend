@@ -5,63 +5,69 @@ import { Form } from "@heroui/form";
 import { Select, SelectItem } from "@heroui/select";
 import { Input } from "@heroui/input";
 import { Checkbox } from "@heroui/checkbox";
-
 import { Button } from "@heroui/button";
+import { addToast } from "@heroui/toast"; // ⬅️ Dodaj to
 
 export default function SignupPage() {
   const [password, setPassword] = React.useState("");
   const [submitted, setSubmitted] = React.useState(null);
   const [errors, setErrors] = React.useState({});
 
-  // Real-time password validation
   const getPasswordError = (value) => {
-    if (value.length < 4) {
-      return "Password must be 4 characters or more";
-    }
-    if ((value.match(/[A-Z]/g) || []).length < 1) {
+    if (value.length < 4) return "Password must be 4 characters or more";
+    if ((value.match(/[A-Z]/g) || []).length < 1)
       return "Password needs at least 1 uppercase letter";
-    }
-    if ((value.match(/[^a-z]/gi) || []).length < 1) {
+    if ((value.match(/[^a-z]/gi) || []).length < 1)
       return "Password needs at least 1 symbol";
-    }
-
     return null;
   };
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
 
-    // Custom validation checks
     const newErrors = {};
-
-    // Password validation
     const passwordError = getPasswordError(data.password);
-
-    if (passwordError) {
-      newErrors.password = passwordError;
-    }
-
-    // Username validation
-    if (data.name === "admin") {
+    if (passwordError) newErrors.password = passwordError;
+    if (data.name === "admin")
       newErrors.name = "Nice try! Choose a different username";
-    }
+    if (data.terms !== "true") newErrors.terms = "Please accept the terms";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-
       return;
     }
 
-    if (data.terms !== "true") {
-      setErrors({ terms: "Please accept the terms" });
-
-      return;
-    }
-
-    // Clear errors and submit
     setErrors({});
-    setSubmitted(data);
+    try {
+      const res = await fetch("http://localhost:5001/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: data.email,
+          username: data.name,
+          passwordHash: data.password,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorMsg = await res.text();
+        throw new Error(errorMsg || "Registration failed");
+      }
+
+      setSubmitted(data);
+      addToast({
+        title: "🎉 Registration successful!",
+        description: "You can now log in to your account.",
+        color: "success",
+      });
+    } catch (err) {
+      addToast({
+        title: "❌ Registration failed",
+        description: err.message || "Something went wrong",
+        color: "danger",
+      });
+    }
   };
 
   return (
@@ -75,6 +81,7 @@ export default function SignupPage() {
           few clicks — the rest is your story.
         </p>
       </div>
+
       <Form
         className="w-full justify-center items-center space-y-4"
         validationErrors={errors}
@@ -84,13 +91,11 @@ export default function SignupPage() {
         <div className="flex flex-col gap-4 max-w-md w-full">
           <Input
             isRequired
-            errorMessage={({ validationDetails }) => {
-              if (validationDetails.valueMissing) {
-                return "Please enter your name";
-              }
-
-              return errors.name;
-            }}
+            errorMessage={({ validationDetails }) =>
+              validationDetails.valueMissing
+                ? "Please enter your name"
+                : errors.name
+            }
             label="Name"
             labelPlacement="outside"
             name="name"
@@ -99,14 +104,13 @@ export default function SignupPage() {
 
           <Input
             isRequired
-            errorMessage={({ validationDetails }) => {
-              if (validationDetails.valueMissing) {
-                return "Please enter your email";
-              }
-              if (validationDetails.typeMismatch) {
-                return "Please enter a valid email address";
-              }
-            }}
+            errorMessage={({ validationDetails }) =>
+              validationDetails.valueMissing
+                ? "Please enter your email"
+                : validationDetails.typeMismatch
+                  ? "Please enter a valid email address"
+                  : undefined
+            }
             label="Email"
             labelPlacement="outside"
             name="email"
@@ -145,9 +149,7 @@ export default function SignupPage() {
 
           <Checkbox
             isRequired
-            classNames={{
-              label: "text-small",
-            }}
+            classNames={{ label: "text-small" }}
             isInvalid={!!errors.terms}
             name="terms"
             validationBehavior="aria"

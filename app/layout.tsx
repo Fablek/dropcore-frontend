@@ -9,6 +9,8 @@ import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { AppNavbar } from "@/components/navbar";
 
+import { ToastProvider } from "@heroui/toast";
+
 export const metadata: Metadata = {
   title: {
     default: siteConfig.name,
@@ -47,7 +49,7 @@ export default function RootLayout({
             <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
               {children}
             </main>
-            <footer className="container mx-auto max-w-7xl pb-12 px-12 flex justify-center">
+            <footer className="container mx-auto max-w-7xl pb-2 px-12 flex justify-center">
               <Link
                 isExternal
                 className="flex items-center gap-1 text-current"
@@ -61,6 +63,8 @@ export default function RootLayout({
             </footer>
           </div>
         </Providers>
+
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
