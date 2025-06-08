@@ -4,6 +4,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import { Button, ButtonGroup } from "@heroui/button";
+
 export default function ProfilePage() {
   const { user, logout, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -20,12 +22,9 @@ export default function ProfilePage() {
       <p className="mt-2">
         Your JWT: <code className="break-all">{user?.token}</code>
       </p>
-      <button
-        className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
-        onClick={logout}
-      >
+      <Button className="mt-4" size="md" color="danger" onClick={logout}>
         Log out
-      </button>
+      </Button>
     </div>
   );
 }
