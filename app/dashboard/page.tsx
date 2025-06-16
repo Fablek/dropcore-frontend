@@ -2,17 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { fetchFiles, FileMetadata } from "@/lib/files/fetchFiles";
+import { deleteFile } from "@/lib/files/deleteFile";
 import { title } from "@/components/primitives";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Progress } from "@heroui/progress";
 import { FileText, Download, Trash2 } from "lucide-react";
+import { useDeleteFileDialog } from "@/components/files/DeleteFileDialog";
+import { addToast } from "@heroui/toast";
 
 export default function DashboardPage() {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const { open: confirmDelete, DeleteFileDialog } = useDeleteFileDialog();
 
   useEffect(() => {
     const load = async () => {
@@ -31,6 +36,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className={title()}>Dashboard</h1>
         <div className="flex gap-2">
@@ -39,6 +45,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Files Table */}
       <Card>
         <CardBody className="p-0">
           <div className="overflow-x-auto rounded-xl">
@@ -89,7 +96,33 @@ export default function DashboardPage() {
                         <Button size="icon" variant="ghost">
                           <Download className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="destructive">
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          onClick={() =>
+                            confirmDelete(file.fileName, async () => {
+                              try {
+                                await deleteFile(file.fileName);
+                                setFiles((prev) =>
+                                  prev.filter(
+                                    (f) => f.fileName !== file.fileName
+                                  )
+                                );
+                                addToast({
+                                  title: "File deleted",
+                                  description: `"${file.fileName}" was removed successfully.`,
+                                  color: "success",
+                                });
+                              } catch (err: any) {
+                                addToast({
+                                  title: "Failed to delete file",
+                                  description: err.message || "Unknown error",
+                                  color: "danger",
+                                });
+                              }
+                            })
+                          }
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </td>
@@ -102,10 +135,14 @@ export default function DashboardPage() {
         </CardBody>
       </Card>
 
+      {/* Upload Progress */}
       <div>
         <p className="text-sm text-muted-foreground mb-1">Upload progress</p>
         <Progress value={0} />
       </div>
+
+      {/* Confirm Delete Dialog */}
+      <DeleteFileDialog />
     </div>
   );
 }
