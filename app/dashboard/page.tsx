@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchFiles, FileMetadata } from "@/lib/api/fetchFiles";
+import { fetchFiles, FileMetadata } from "@/lib/files/fetchFiles";
 import { title } from "@/components/primitives";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";

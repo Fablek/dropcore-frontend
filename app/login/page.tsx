@@ -1,28 +1,28 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Form } from "@heroui/form";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
 import { Spinner } from "@heroui/spinner";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { loginUser } from "@/lib/auth/loginUser";
 
 export default function LoginPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
       router.push("/profile");
     }
   }, [isAuthenticated, loading]);
-
-  const [password, setPassword] = React.useState("");
-  const [errors, setErrors] = React.useState({});
 
   if (loading || isAuthenticated) {
     return (
@@ -62,29 +62,18 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const res = await fetch("http://localhost:8000/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password,
-        }),
-      });
-
-      if (!res.ok) {
-        const msg = await res.text();
-        throw new Error(msg || "Login failed");
-      }
-
-      const result = await res.json();
+      const result = await loginUser(
+        data.email as string,
+        data.password as string
+      );
       localStorage.setItem("token", result.token);
 
       addToast({
         title: "Logged in successfully! 🎉",
         color: "success",
       });
+
+      router.push("/profile");
     } catch (err: any) {
       addToast({
         title: err.message,

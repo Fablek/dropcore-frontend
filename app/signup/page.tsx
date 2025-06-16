@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Form } from "@heroui/form";
 import { Select, SelectItem } from "@heroui/select";
 import { Input } from "@heroui/input";
@@ -8,24 +8,24 @@ import { Checkbox } from "@heroui/checkbox";
 import { Button } from "@heroui/button";
 import { addToast } from "@heroui/toast";
 import { Spinner } from "@heroui/spinner";
+import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { registerUser } from "@/lib/auth/registerUser";
 
 export default function SignupPage() {
   const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
+
+  const [password, setPassword] = useState("");
+  const [submitted, setSubmitted] = useState(null);
+  const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
       router.push("/profile");
     }
   }, [isAuthenticated, loading]);
-
-  const [password, setPassword] = React.useState("");
-  const [submitted, setSubmitted] = React.useState(null);
-  const [errors, setErrors] = React.useState({});
 
   if (loading || isAuthenticated) {
     return (
@@ -35,7 +35,7 @@ export default function SignupPage() {
     );
   }
 
-  const getPasswordError = (value) => {
+  const getPasswordError = (value: string) => {
     if (value.length < 4) return "Password must be 4 characters or more";
     if ((value.match(/[A-Z]/g) || []).length < 1)
       return "Password needs at least 1 uppercase letter";
@@ -44,12 +44,12 @@ export default function SignupPage() {
     return null;
   };
 
-  const onSubmit = async (e) => {
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(e.currentTarget));
 
-    const newErrors = {};
-    const passwordError = getPasswordError(data.password);
+    const newErrors: any = {};
+    const passwordError = getPasswordError(data.password as string);
     if (passwordError) newErrors.password = passwordError;
     if (data.name === "admin")
       newErrors.name = "Nice try! Choose a different username";
@@ -62,20 +62,11 @@ export default function SignupPage() {
 
     setErrors({});
     try {
-      const res = await fetch("http://localhost:8000/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: data.email,
-          username: data.name,
-          password: data.password,
-        }),
+      await registerUser({
+        email: data.email as string,
+        username: data.name as string,
+        password: data.password as string,
       });
-
-      if (!res.ok) {
-        const errorMsg = await res.text();
-        throw new Error(errorMsg || "Registration failed");
-      }
 
       setSubmitted(data);
       addToast({
@@ -83,7 +74,7 @@ export default function SignupPage() {
         description: "You can now log in to your account.",
         color: "success",
       });
-    } catch (err) {
+    } catch (err: any) {
       addToast({
         title: "❌ Registration failed",
         description: err.message || "Something went wrong",
