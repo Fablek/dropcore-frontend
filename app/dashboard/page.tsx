@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { fetchFiles, FileMetadata } from "@/lib/files/fetchFiles";
 import { deleteFile } from "@/lib/files/deleteFile";
+import { uploadFile } from "@/lib/files/uploadFile";
+import { downloadFile } from "@/lib/files/downloadFile";
 import { title } from "@/components/primitives";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -16,7 +18,9 @@ export default function DashboardPage() {
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { open: confirmDelete, DeleteFileDialog } = useDeleteFileDialog();
 
   useEffect(() => {
@@ -34,6 +38,33 @@ export default function DashboardPage() {
     load();
   }, []);
 
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadProgress(0);
+
+      await uploadFile(file, setUploadProgress);
+
+      addToast({
+        title: "Upload successful",
+        description: `"${file.name}" uploaded successfully.`,
+        color: "success",
+      });
+
+      const updated = await fetchFiles();
+      setFiles(updated);
+      fileInputRef.current!.value = "";
+    } catch (err: any) {
+      addToast({
+        title: "Upload failed",
+        description: err.message || "Unknown error",
+        color: "danger",
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground p-6 space-y-6">
       {/* Header */}
@@ -41,7 +72,18 @@ export default function DashboardPage() {
         <h1 className={title()}>Dashboard</h1>
         <div className="flex gap-2">
           <Input placeholder="Search files..." className="w-64" />
-          <Button variant="secondary">Upload File</Button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            hidden
+            onChange={handleUpload}
+          />
+          <Button
+            variant="secondary"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Upload File
+          </Button>
         </div>
       </div>
 
@@ -93,7 +135,26 @@ export default function DashboardPage() {
                       <td className="px-4 py-2">{file.contentType || "-"}</td>
                       <td className="px-4 py-2">{file.ownerId || "-"}</td>
                       <td className="px-4 py-2 text-right space-x-2">
-                        <Button size="icon" variant="ghost">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={async () => {
+                            try {
+                              await downloadFile(file.fileName);
+                              addToast({
+                                title: "Download started",
+                                description: `Downloading "${file.fileName}"...`,
+                                color: "success",
+                              });
+                            } catch (err: any) {
+                              addToast({
+                                title: "Download failed",
+                                description: err.message || "Unknown error",
+                                color: "danger",
+                              });
+                            }
+                          }}
+                        >
                           <Download className="w-4 h-4" />
                         </Button>
                         <Button
@@ -138,7 +199,7 @@ export default function DashboardPage() {
       {/* Upload Progress */}
       <div>
         <p className="text-sm text-muted-foreground mb-1">Upload progress</p>
-        <Progress value={0} />
+        <Progress value={uploadProgress} />
       </div>
 
       {/* Confirm Delete Dialog */}
