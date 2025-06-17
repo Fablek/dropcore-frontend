@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Spinner } from "@heroui/spinner"; // dodaj spinner
+import { Spinner } from "@heroui/spinner";
 import { fetchFiles, FileMetadata } from "@/lib/files/fetchFiles";
 import { deleteFile } from "@/lib/files/deleteFile";
 import { uploadFile } from "@/lib/files/uploadFile";
@@ -15,31 +15,31 @@ import { Progress } from "@heroui/progress";
 import { FileText, Download, Trash2 } from "lucide-react";
 import { useDeleteFileDialog } from "@/components/files/DeleteFileDialog";
 import { addToast } from "@heroui/toast";
+import { parseJwt } from "@/lib/utils/parseJwt";
 
 export default function DashboardPage() {
   const router = useRouter();
-
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [authChecked, setAuthChecked] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { open: confirmDelete, DeleteFileDialog } = useDeleteFileDialog();
 
-  // 🛡️ Sprawdź autoryzację
   useEffect(() => {
     const token = localStorage.getItem("token");
-
     if (!token) {
       router.push("/login");
     } else {
+      const decoded = parseJwt(token);
+      setUserEmail(decoded?.email || null);
       setAuthChecked(true);
     }
   }, [router]);
 
-  // 📁 Pobierz pliki jeśli autoryzowany
   useEffect(() => {
     if (!authChecked) return;
 
@@ -83,7 +83,6 @@ export default function DashboardPage() {
     }
   };
 
-  // 🔄 Spinner podczas sprawdzania tokena
   if (!authChecked) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -95,10 +94,10 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background text-foreground p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className={title()}>Dashboard</h1>
-        <div className="flex gap-2">
-          <Input placeholder="Search files..." className="w-64" />
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Input placeholder="Search files..." className="w-full sm:w-64" />
           <input
             type="file"
             ref={fileInputRef}
@@ -114,11 +113,11 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Files Table */}
-      <Card>
+      {/* Desktop Table */}
+      <Card className="hidden sm:block">
         <CardBody className="p-0">
           <div className="overflow-x-auto rounded-xl">
-            <table className="w-full text-sm">
+            <table className="min-w-full text-sm">
               <thead className="bg-muted text-muted-foreground text-xs uppercase">
                 <tr>
                   <th className="px-4 py-2 text-left">Name</th>
@@ -155,12 +154,12 @@ export default function DashboardPage() {
                       key={file.fileName}
                       className="border-t border-border hover:bg-muted/50 transition"
                     >
-                      <td className="px-4 py-2 flex items-center gap-2">
+                      <td className="px-4 py-2 flex items-center gap-2 break-all">
                         <FileText className="w-4 h-4 text-muted-foreground" />
                         {file.fileName}
                       </td>
                       <td className="px-4 py-2">{file.contentType || "-"}</td>
-                      <td className="px-4 py-2">{file.ownerId || "-"}</td>
+                      <td className="px-4 py-2">{userEmail || "-"}</td>
                       <td className="px-4 py-2 text-right space-x-2">
                         <Button
                           size="icon"
@@ -229,7 +228,6 @@ export default function DashboardPage() {
         <Progress value={uploadProgress} />
       </div>
 
-      {/* Confirm Delete Dialog */}
       <DeleteFileDialog />
     </div>
   );
