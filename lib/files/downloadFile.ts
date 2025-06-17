@@ -1,7 +1,13 @@
 export async function downloadFile(fileName: string) {
   const url = `${process.env.NEXT_PUBLIC_FILE_SERVICE_URL}/files/${encodeURIComponent(fileName)}`;
 
-  const res = await fetch(url);
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+    },
+  });
+
   if (!res.ok) {
     throw new Error("Failed to download file");
   }

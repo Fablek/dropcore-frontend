@@ -7,6 +7,9 @@ export async function deleteFile(fileName: string): Promise<void> {
 
   const res = await fetch(`${baseUrl}/files/${encodeURIComponent(fileName)}`, {
     method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+    },
   });
 
   if (!res.ok) {

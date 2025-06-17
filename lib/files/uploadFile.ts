@@ -30,6 +30,10 @@ export async function uploadFile(
 
     xhr.onerror = () => reject(new Error("Network error during upload"));
 
+    xhr.setRequestHeader(
+      "Authorization",
+      `Bearer ${localStorage.getItem("token") ?? ""}`
+    );
     xhr.send(formData);
   });
 }
