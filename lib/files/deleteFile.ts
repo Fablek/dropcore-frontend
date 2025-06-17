@@ -1,11 +1,7 @@
-export async function deleteFile(fileName: string): Promise<void> {
+export async function deleteFile(id: string): Promise<void> {
   const baseUrl = process.env.NEXT_PUBLIC_FILE_SERVICE_URL;
 
-  if (!baseUrl) {
-    throw new Error("Missing NEXT_PUBLIC_FILE_SERVICE_URL in .env.local");
-  }
-
-  const res = await fetch(`${baseUrl}/files/${encodeURIComponent(fileName)}`, {
+  const res = await fetch(`${baseUrl}/files/${id}`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,

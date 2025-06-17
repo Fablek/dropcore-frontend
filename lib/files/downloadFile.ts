@@ -1,5 +1,5 @@
-export async function downloadFile(fileName: string) {
-  const url = `${process.env.NEXT_PUBLIC_FILE_SERVICE_URL}/files/${encodeURIComponent(fileName)}`;
+export async function downloadFile(id: string, originalName: string) {
+  const url = `${process.env.NEXT_PUBLIC_FILE_SERVICE_URL}/files/${id}`;
 
   const res = await fetch(url, {
     method: "GET",
@@ -8,16 +8,13 @@ export async function downloadFile(fileName: string) {
     },
   });
 
-  if (!res.ok) {
-    throw new Error("Failed to download file");
-  }
+  if (!res.ok) throw new Error("Failed to download file");
 
   const blob = await res.blob();
   const href = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
   a.href = href;
-  a.download = fileName;
+  a.download = originalName;
   document.body.appendChild(a);
   a.click();
   a.remove();

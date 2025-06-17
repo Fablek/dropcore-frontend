@@ -64,13 +64,7 @@ export default function DashboardPage() {
     try {
       setUploadProgress(0);
       await uploadFile(file, setUploadProgress);
-
-      addToast({
-        title: "Upload successful",
-        description: `"${file.name}" uploaded successfully.`,
-        color: "success",
-      });
-
+      addToast({ title: "Upload successful", color: "success" });
       const updated = await fetchFiles();
       setFiles(updated);
       fileInputRef.current!.value = "";
@@ -92,8 +86,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground p-6 space-y-6">
-      {/* Header */}
+    <div className="min-h-screen p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className={title()}>Dashboard</h1>
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
@@ -104,123 +97,154 @@ export default function DashboardPage() {
             hidden
             onChange={handleUpload}
           />
-          <Button
-            variant="secondary"
-            onClick={() => fileInputRef.current?.click()}
-          >
+          <Button onClick={() => fileInputRef.current?.click()}>
             Upload File
           </Button>
         </div>
       </div>
 
-      {/* Desktop Table */}
+      {/* Desktop */}
       <Card className="hidden sm:block">
         <CardBody className="p-0">
-          <div className="overflow-x-auto rounded-xl">
-            <table className="min-w-full text-sm">
-              <thead className="bg-muted text-muted-foreground text-xs uppercase">
+          <table className="min-w-full text-sm">
+            <thead className="bg-muted text-muted-foreground text-xs uppercase">
+              <tr>
+                <th className="px-4 py-2 text-left">Name</th>
+                <th className="px-4 py-2 text-left">Type</th>
+                <th className="px-4 py-2 text-left">Owner</th>
+                <th className="px-4 py-2 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th className="px-4 py-2 text-left">Name</th>
-                  <th className="px-4 py-2 text-left">Type</th>
-                  <th className="px-4 py-2 text-left">Owner</th>
-                  <th className="px-4 py-2 text-right">Actions</th>
+                  <td colSpan={4} className="text-center py-4">
+                    Loading...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-4 text-center">
-                      Loading...
+              ) : error ? (
+                <tr>
+                  <td colSpan={4} className="text-center text-red-500 py-4">
+                    {error}
+                  </td>
+                </tr>
+              ) : files.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="text-center py-4">
+                    No files found.
+                  </td>
+                </tr>
+              ) : (
+                files.map((file) => (
+                  <tr key={file.id}>
+                    <td className="px-4 py-2 flex items-center gap-2 break-all">
+                      <FileText className="w-4 h-4 text-muted-foreground" />
+                      {file.fileName}
                     </td>
-                  </tr>
-                ) : error ? (
-                  <tr>
-                    <td
-                      colSpan={4}
-                      className="px-4 py-4 text-center text-red-500"
-                    >
-                      {error}
-                    </td>
-                  </tr>
-                ) : files.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-4 text-center">
-                      No files found.
-                    </td>
-                  </tr>
-                ) : (
-                  files.map((file) => (
-                    <tr
-                      key={file.fileName}
-                      className="border-t border-border hover:bg-muted/50 transition"
-                    >
-                      <td className="px-4 py-2 flex items-center gap-2 break-all">
-                        <FileText className="w-4 h-4 text-muted-foreground" />
-                        {file.fileName}
-                      </td>
-                      <td className="px-4 py-2">{file.contentType || "-"}</td>
-                      <td className="px-4 py-2">{userEmail || "-"}</td>
-                      <td className="px-4 py-2 text-right space-x-2">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={async () => {
+                    <td className="px-4 py-2">{file.contentType}</td>
+                    <td className="px-4 py-2">{userEmail}</td>
+                    <td className="px-4 py-2 text-right space-x-2">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => downloadFile(file.id!, file.fileName)}
+                      >
+                        <Download className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="destructive"
+                        onClick={() =>
+                          confirmDelete(file.fileName, async () => {
                             try {
-                              await downloadFile(file.fileName);
+                              await deleteFile(file.id!);
+                              setFiles((prev) =>
+                                prev.filter((f) => f.id !== file.id)
+                              );
                               addToast({
-                                title: "Download started",
-                                description: `Downloading "${file.fileName}"...`,
+                                title: "File deleted",
                                 color: "success",
                               });
                             } catch (err: any) {
                               addToast({
-                                title: "Download failed",
-                                description: err.message || "Unknown error",
+                                title: "Failed to delete",
+                                description: err.message,
                                 color: "danger",
                               });
                             }
-                          }}
-                        >
-                          <Download className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="destructive"
-                          onClick={() =>
-                            confirmDelete(file.fileName, async () => {
-                              try {
-                                await deleteFile(file.fileName);
-                                setFiles((prev) =>
-                                  prev.filter(
-                                    (f) => f.fileName !== file.fileName
-                                  )
-                                );
-                                addToast({
-                                  title: "File deleted",
-                                  description: `"${file.fileName}" was removed successfully.`,
-                                  color: "success",
-                                });
-                              } catch (err: any) {
-                                addToast({
-                                  title: "Failed to delete file",
-                                  description: err.message || "Unknown error",
-                                  color: "danger",
-                                });
-                              }
-                            })
-                          }
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                          })
+                        }
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </CardBody>
       </Card>
+
+      {/* Mobile view */}
+      <div className="block sm:hidden space-y-4">
+        {loading ? (
+          <p className="text-center">Loading...</p>
+        ) : error ? (
+          <p className="text-center text-red-500">{error}</p>
+        ) : files.length === 0 ? (
+          <p className="text-center">No files found.</p>
+        ) : (
+          files.map((file) => (
+            <Card key={file.id}>
+              <CardBody className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium break-all">{file.fileName}</span>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Type: {file.contentType}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Owner: {userEmail}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => downloadFile(file.id!, file.fileName)}
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    onClick={() =>
+                      confirmDelete(file.fileName, async () => {
+                        try {
+                          await deleteFile(file.id!);
+                          setFiles((prev) =>
+                            prev.filter((f) => f.id !== file.id)
+                          );
+                          addToast({ title: "File deleted", color: "success" });
+                        } catch (err: any) {
+                          addToast({
+                            title: "Failed to delete",
+                            description: err.message,
+                            color: "danger",
+                          });
+                        }
+                      })
+                    }
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          ))
+        )}
+      </div>
 
       {/* Upload Progress */}
       <div>
