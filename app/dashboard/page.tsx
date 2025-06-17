@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Spinner } from "@heroui/spinner"; // dodaj spinner
 import { fetchFiles, FileMetadata } from "@/lib/files/fetchFiles";
 import { deleteFile } from "@/lib/files/deleteFile";
 import { uploadFile } from "@/lib/files/uploadFile";
@@ -15,15 +17,32 @@ import { useDeleteFileDialog } from "@/components/files/DeleteFileDialog";
 import { addToast } from "@heroui/toast";
 
 export default function DashboardPage() {
+  const router = useRouter();
+
   const [files, setFiles] = useState<FileMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [authChecked, setAuthChecked] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { open: confirmDelete, DeleteFileDialog } = useDeleteFileDialog();
 
+  // 🛡️ Sprawdź autoryzację
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      router.push("/login");
+    } else {
+      setAuthChecked(true);
+    }
+  }, [router]);
+
+  // 📁 Pobierz pliki jeśli autoryzowany
+  useEffect(() => {
+    if (!authChecked) return;
+
     const load = async () => {
       try {
         const data = await fetchFiles();
@@ -36,7 +55,7 @@ export default function DashboardPage() {
     };
 
     load();
-  }, []);
+  }, [authChecked]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,7 +63,6 @@ export default function DashboardPage() {
 
     try {
       setUploadProgress(0);
-
       await uploadFile(file, setUploadProgress);
 
       addToast({
@@ -64,6 +82,15 @@ export default function DashboardPage() {
       });
     }
   };
+
+  // 🔄 Spinner podczas sprawdzania tokena
+  if (!authChecked) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Spinner color="default" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground p-6 space-y-6">
