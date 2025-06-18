@@ -1,9 +1,11 @@
 export interface FileMetadata {
   id: string;
   fileName: string;
-  storageFileName?: string;
-  contentType?: string;
-  ownerId?: string;
+  storageFileName: string;
+  contentType: string;
+  fileSize: number;
+  uploadedAt: string;
+  ownerId: string;
 }
 
 export async function fetchFiles(): Promise<FileMetadata[]> {

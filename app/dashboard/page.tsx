@@ -7,6 +7,8 @@ import { fetchFiles, FileMetadata } from "@/lib/files/fetchFiles";
 import { deleteFile } from "@/lib/files/deleteFile";
 import { uploadFile } from "@/lib/files/uploadFile";
 import { downloadFile } from "@/lib/files/downloadFile";
+import { fetchUserInfo, UserSpaceInfo } from "@/lib/users/fetchUserInfo";
+import { updateUsedSpace } from "@/lib/users/updateUsedSpace";
 import { title } from "@/components/primitives";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -25,6 +27,8 @@ export default function DashboardPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [authChecked, setAuthChecked] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserSpaceInfo | null>(null);
+  const [userInfoError, setUserInfoError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { open: confirmDelete, DeleteFileDialog } = useDeleteFileDialog();
@@ -57,6 +61,35 @@ export default function DashboardPage() {
     load();
   }, [authChecked]);
 
+  useEffect(() => {
+    if (!userEmail) return;
+
+    const loadUserInfo = async () => {
+      try {
+        const info = await fetchUserInfo(userEmail);
+        setUserInfo(info);
+      } catch (err: any) {
+        setUserInfoError(err.message || "Failed to fetch user info");
+      }
+    };
+
+    loadUserInfo();
+  }, [userEmail]);
+
+  const recalculateUsedSpace = async (fileList: FileMetadata[]) => {
+    const totalUsed = fileList.reduce((acc, f) => acc + (f.fileSize || 0), 0);
+
+    if (userEmail) {
+      try {
+        await updateUsedSpace(userEmail, totalUsed);
+        const updatedInfo = await fetchUserInfo(userEmail);
+        setUserInfo(updatedInfo);
+      } catch (err: any) {
+        console.error("Failed to update used space:", err.message);
+      }
+    }
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -65,13 +98,33 @@ export default function DashboardPage() {
       setUploadProgress(0);
       await uploadFile(file, setUploadProgress);
       addToast({ title: "Upload successful", color: "success" });
+
       const updated = await fetchFiles();
       setFiles(updated);
+      await recalculateUsedSpace(updated);
+
       fileInputRef.current!.value = "";
     } catch (err: any) {
       addToast({
         title: "Upload failed",
         description: err.message || "Unknown error",
+        color: "danger",
+      });
+    }
+  };
+
+  const handleDelete = async (fileId: string) => {
+    try {
+      await deleteFile(fileId);
+      const updated = files.filter((f) => f.id !== fileId);
+      setFiles(updated);
+      await recalculateUsedSpace(updated);
+
+      addToast({ title: "File deleted", color: "success" });
+    } catch (err: any) {
+      addToast({
+        title: "Failed to delete",
+        description: err.message,
         color: "danger",
       });
     }
@@ -103,7 +156,20 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Desktop */}
+      {userInfo && (
+        <div className="w-full sm:w-96">
+          <p className="text-sm text-muted-foreground mb-1">
+            Storage usage: {(userInfo.usedSpace / 1024 / 1024).toFixed(2)} MB /{" "}
+            {(userInfo.spaceLimit / 1024 / 1024).toFixed(2)} MB (
+            {((userInfo.usedSpace / userInfo.spaceLimit) * 100).toFixed(1)}%)
+          </p>
+          <Progress value={(userInfo.usedSpace / userInfo.spaceLimit) * 100} />
+        </div>
+      )}
+      {userInfoError && (
+        <div className="text-sm text-red-500">{userInfoError}</div>
+      )}
+
       <Card className="hidden sm:block">
         <CardBody className="p-0">
           <table className="min-w-full text-sm">
@@ -155,24 +221,9 @@ export default function DashboardPage() {
                         size="icon"
                         variant="destructive"
                         onClick={() =>
-                          confirmDelete(file.fileName, async () => {
-                            try {
-                              await deleteFile(file.id!);
-                              setFiles((prev) =>
-                                prev.filter((f) => f.id !== file.id)
-                              );
-                              addToast({
-                                title: "File deleted",
-                                color: "success",
-                              });
-                            } catch (err: any) {
-                              addToast({
-                                title: "Failed to delete",
-                                description: err.message,
-                                color: "danger",
-                              });
-                            }
-                          })
+                          confirmDelete(file.fileName, () =>
+                            handleDelete(file.id!)
+                          )
                         }
                       >
                         <Trash2 className="w-4 h-4" />
@@ -186,7 +237,7 @@ export default function DashboardPage() {
         </CardBody>
       </Card>
 
-      {/* Mobile view */}
+      {/* Mobile View */}
       <div className="block sm:hidden space-y-4">
         {loading ? (
           <p className="text-center">Loading...</p>
@@ -220,21 +271,7 @@ export default function DashboardPage() {
                     size="icon"
                     variant="destructive"
                     onClick={() =>
-                      confirmDelete(file.fileName, async () => {
-                        try {
-                          await deleteFile(file.id!);
-                          setFiles((prev) =>
-                            prev.filter((f) => f.id !== file.id)
-                          );
-                          addToast({ title: "File deleted", color: "success" });
-                        } catch (err: any) {
-                          addToast({
-                            title: "Failed to delete",
-                            description: err.message,
-                            color: "danger",
-                          });
-                        }
-                      })
+                      confirmDelete(file.fileName, () => handleDelete(file.id!))
                     }
                   >
                     <Trash2 className="w-4 h-4" />
@@ -246,7 +283,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Upload Progress */}
       <div>
         <p className="text-sm text-muted-foreground mb-1">Upload progress</p>
         <Progress value={uploadProgress} />
