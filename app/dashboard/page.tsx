@@ -17,8 +17,10 @@ import { Input } from "@heroui/input";
 import { Progress } from "@heroui/progress";
 import { FileText, Download, Trash2 } from "lucide-react";
 import { useDeleteFileDialog } from "@/components/files/DeleteFileDialog";
+import { FilePreviewDialog } from "@/components/files/FilePreviewDialog";
 import { addToast } from "@heroui/toast";
 import { parseJwt } from "@/lib/utils/parseJwt";
+import { Eye } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -179,6 +181,57 @@ export default function DashboardPage() {
         <div className="text-sm text-red-500">{userInfoError}</div>
       )}
 
+      {/* Mobile view (visible only below sm) */}
+      <div className="block sm:hidden space-y-4">
+        {loading ? (
+          <div className="text-center py-4 text-sm text-muted-foreground">
+            Loading...
+          </div>
+        ) : error ? (
+          <div className="text-center py-4 text-sm text-red-500">{error}</div>
+        ) : files.length === 0 ? (
+          <div className="text-center py-4 text-sm">No files found.</div>
+        ) : (
+          files.map((file) => (
+            <Card key={file.id} className="p-4 space-y-2 text-sm">
+              <div className="font-semibold break-words">{file.fileName}</div>
+              <div className="text-muted-foreground">
+                {file.contentType} • {(file.fileSize / 1024 / 1024).toFixed(2)}{" "}
+                MB
+              </div>
+              <div className="text-xs text-muted-foreground">
+                Uploaded: {new Date(file.uploadedAt).toLocaleString()}
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => downloadFile(file.id!, file.fileName)}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  onClick={() => handlePreview(file)}
+                >
+                  <Eye className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  onClick={() =>
+                    confirmDelete(file.fileName, () => handleDelete(file.id!))
+                  }
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+
       <Card className="hidden sm:block">
         <CardBody className="p-0">
           <table className="min-w-full text-sm">
@@ -239,7 +292,7 @@ export default function DashboardPage() {
                         variant="secondary"
                         onClick={() => handlePreview(file)}
                       >
-                        👁️
+                        <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         size="icon"
@@ -267,34 +320,12 @@ export default function DashboardPage() {
       </div>
 
       {previewFile && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-4 rounded-lg w-full max-w-lg relative space-y-4">
-            <button
-              onClick={() => setPreviewFile(null)}
-              className="absolute top-2 right-2 text-gray-500"
-            >
-              ✖
-            </button>
-            <h2 className="text-lg font-semibold">{previewFile.fileName}</h2>
-            {previewLoading ? (
-              <p>Loading preview...</p>
-            ) : previewData?.type === "text" ? (
-              <pre className="p-2 bg-gray-100 overflow-auto max-h-96 whitespace-pre-wrap text-sm">
-                {previewData.content}
-              </pre>
-            ) : previewData?.type === "image" ? (
-              <img
-                src={`data:${previewData.contentType};base64,${previewData.base64}`}
-                alt="Preview"
-                className="max-w-full max-h-96 rounded shadow"
-              />
-            ) : (
-              <p className="text-sm text-gray-500">
-                {previewData?.message || "Unsupported file type"}
-              </p>
-            )}
-          </div>
-        </div>
+        <FilePreviewDialog
+          fileName={previewFile.fileName}
+          loading={previewLoading}
+          data={previewData}
+          onClose={() => setPreviewFile(null)}
+        />
       )}
 
       <DeleteFileDialog />
