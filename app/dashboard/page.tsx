@@ -177,6 +177,8 @@ export default function DashboardPage() {
               <tr>
                 <th className="px-4 py-2 text-left">Name</th>
                 <th className="px-4 py-2 text-left">Type</th>
+                <th className="px-4 py-2 text-left">Size</th>
+                <th className="px-4 py-2 text-left">Uploaded</th>
                 <th className="px-4 py-2 text-left">Owner</th>
                 <th className="px-4 py-2 text-right">Actions</th>
               </tr>
@@ -184,19 +186,19 @@ export default function DashboardPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-4">
+                  <td colSpan={6} className="text-center py-4">
                     Loading...
                   </td>
                 </tr>
               ) : error ? (
                 <tr>
-                  <td colSpan={4} className="text-center text-red-500 py-4">
+                  <td colSpan={6} className="text-center text-red-500 py-4">
                     {error}
                   </td>
                 </tr>
               ) : files.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="text-center py-4">
+                  <td colSpan={6} className="text-center py-4">
                     No files found.
                   </td>
                 </tr>
@@ -208,6 +210,12 @@ export default function DashboardPage() {
                       {file.fileName}
                     </td>
                     <td className="px-4 py-2">{file.contentType}</td>
+                    <td className="px-4 py-2">
+                      {(file.fileSize / 1024 / 1024).toFixed(2)} MB
+                    </td>
+                    <td className="px-4 py-2">
+                      {new Date(file.uploadedAt).toLocaleString()}
+                    </td>
                     <td className="px-4 py-2">{userEmail}</td>
                     <td className="px-4 py-2 text-right space-x-2">
                       <Button
@@ -255,6 +263,12 @@ export default function DashboardPage() {
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Type: {file.contentType}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Size: {(file.fileSize / 1024 / 1024).toFixed(2)} MB
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Uploaded: {new Date(file.uploadedAt).toLocaleString()}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Owner: {userEmail}
