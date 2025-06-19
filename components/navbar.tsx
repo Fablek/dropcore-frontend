@@ -27,7 +27,21 @@ import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { GithubIcon, SearchIcon, Logo } from "@/components/icons";
 
+import { parseJwt } from "@/lib/utils/parseJwt";
+
+import { useEffect, useState } from "react";
+
 export const AppNavbar = () => {
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      const decoded = parseJwt(token);
+      setUserEmail(decoded?.email || null);
+    }
+  }, []);
+
   const searchInput = (
     <Input
       aria-label="Search"
@@ -103,13 +117,19 @@ export const AppNavbar = () => {
             <DropdownMenu aria-label="Profile Actions" variant="flat">
               <DropdownItem key="profile" className="h-14 gap-2">
                 <p className="font-semibold">Signed in as</p>
-                <p className="font-semibold">jane@dropcore.io</p>
+                <p className="font-semibold">{userEmail ?? "Unknown"}</p>
               </DropdownItem>
-              <DropdownItem key="settings">My Settings</DropdownItem>
-              <DropdownItem key="team">Team</DropdownItem>
-              <DropdownItem key="analytics">Analytics</DropdownItem>
-              <DropdownItem key="help">Help & Feedback</DropdownItem>
-              <DropdownItem key="logout" color="danger">
+              <DropdownItem href="/dashboard" key="settings">
+                Dashboard
+              </DropdownItem>
+              <DropdownItem
+                key="logout"
+                color="danger"
+                onClick={() => {
+                  localStorage.removeItem("token");
+                  window.location.href = "/login";
+                }}
+              >
                 Log Out
               </DropdownItem>
             </DropdownMenu>

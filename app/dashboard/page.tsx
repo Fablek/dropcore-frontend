@@ -174,7 +174,10 @@ export default function DashboardPage() {
             {(userInfo.spaceLimit / 1024 / 1024).toFixed(2)} MB (
             {((userInfo.usedSpace / userInfo.spaceLimit) * 100).toFixed(1)}%)
           </p>
-          <Progress value={(userInfo.usedSpace / userInfo.spaceLimit) * 100} />
+          <Progress
+            color="secondary"
+            value={(userInfo.usedSpace / userInfo.spaceLimit) * 100}
+          />
         </div>
       )}
       {userInfoError && (
@@ -316,7 +319,7 @@ export default function DashboardPage() {
 
       <div>
         <p className="text-sm text-muted-foreground mb-1">Upload progress</p>
-        <Progress value={uploadProgress} />
+        <Progress color="secondary" value={uploadProgress} />
       </div>
 
       {previewFile && (
