@@ -9,6 +9,7 @@ import { uploadFile } from "@/lib/files/uploadFile";
 import { downloadFile } from "@/lib/files/downloadFile";
 import { fetchUserInfo, UserSpaceInfo } from "@/lib/users/fetchUserInfo";
 import { updateUsedSpace } from "@/lib/users/updateUsedSpace";
+import { viewFile, ViewResult } from "@/lib/files/viewFile";
 import { title } from "@/components/primitives";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
@@ -30,6 +31,10 @@ export default function DashboardPage() {
   const [userInfo, setUserInfo] = useState<UserSpaceInfo | null>(null);
   const [userInfoError, setUserInfoError] = useState<string | null>(null);
 
+  const [previewFile, setPreviewFile] = useState<FileMetadata | null>(null);
+  const [previewData, setPreviewData] = useState<ViewResult | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { open: confirmDelete, DeleteFileDialog } = useDeleteFileDialog();
 
@@ -46,7 +51,6 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!authChecked) return;
-
     const load = async () => {
       try {
         const data = await fetchFiles();
@@ -57,13 +61,11 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
-
     load();
   }, [authChecked]);
 
   useEffect(() => {
     if (!userEmail) return;
-
     const loadUserInfo = async () => {
       try {
         const info = await fetchUserInfo(userEmail);
@@ -72,13 +74,11 @@ export default function DashboardPage() {
         setUserInfoError(err.message || "Failed to fetch user info");
       }
     };
-
     loadUserInfo();
   }, [userEmail]);
 
   const recalculateUsedSpace = async (fileList: FileMetadata[]) => {
     const totalUsed = fileList.reduce((acc, f) => acc + (f.fileSize || 0), 0);
-
     if (userEmail) {
       try {
         await updateUsedSpace(userEmail, totalUsed);
@@ -93,16 +93,13 @@ export default function DashboardPage() {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       setUploadProgress(0);
       await uploadFile(file, setUploadProgress);
       addToast({ title: "Upload successful", color: "success" });
-
       const updated = await fetchFiles();
       setFiles(updated);
       await recalculateUsedSpace(updated);
-
       fileInputRef.current!.value = "";
     } catch (err: any) {
       addToast({
@@ -119,7 +116,6 @@ export default function DashboardPage() {
       const updated = files.filter((f) => f.id !== fileId);
       setFiles(updated);
       await recalculateUsedSpace(updated);
-
       addToast({ title: "File deleted", color: "success" });
     } catch (err: any) {
       addToast({
@@ -127,6 +123,19 @@ export default function DashboardPage() {
         description: err.message,
         color: "danger",
       });
+    }
+  };
+
+  const handlePreview = async (file: FileMetadata) => {
+    setPreviewFile(file);
+    setPreviewLoading(true);
+    try {
+      const result = await viewFile(file.id);
+      setPreviewData(result);
+    } catch {
+      setPreviewData({ type: "error", message: "Failed to load preview" });
+    } finally {
+      setPreviewLoading(false);
     }
   };
 
@@ -227,6 +236,13 @@ export default function DashboardPage() {
                       </Button>
                       <Button
                         size="icon"
+                        variant="secondary"
+                        onClick={() => handlePreview(file)}
+                      >
+                        👁️
+                      </Button>
+                      <Button
+                        size="icon"
                         variant="destructive"
                         onClick={() =>
                           confirmDelete(file.fileName, () =>
@@ -245,62 +261,41 @@ export default function DashboardPage() {
         </CardBody>
       </Card>
 
-      {/* Mobile View */}
-      <div className="block sm:hidden space-y-4">
-        {loading ? (
-          <p className="text-center">Loading...</p>
-        ) : error ? (
-          <p className="text-center text-red-500">{error}</p>
-        ) : files.length === 0 ? (
-          <p className="text-center">No files found.</p>
-        ) : (
-          files.map((file) => (
-            <Card key={file.id}>
-              <CardBody className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-muted-foreground" />
-                  <span className="font-medium break-all">{file.fileName}</span>
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Type: {file.contentType}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Size: {(file.fileSize / 1024 / 1024).toFixed(2)} MB
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Uploaded: {new Date(file.uploadedAt).toLocaleString()}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Owner: {userEmail}
-                </div>
-                <div className="flex justify-end gap-2">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => downloadFile(file.id!, file.fileName)}
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="destructive"
-                    onClick={() =>
-                      confirmDelete(file.fileName, () => handleDelete(file.id!))
-                    }
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-          ))
-        )}
-      </div>
-
       <div>
         <p className="text-sm text-muted-foreground mb-1">Upload progress</p>
         <Progress value={uploadProgress} />
       </div>
+
+      {previewFile && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg w-full max-w-lg relative space-y-4">
+            <button
+              onClick={() => setPreviewFile(null)}
+              className="absolute top-2 right-2 text-gray-500"
+            >
+              ✖
+            </button>
+            <h2 className="text-lg font-semibold">{previewFile.fileName}</h2>
+            {previewLoading ? (
+              <p>Loading preview...</p>
+            ) : previewData?.type === "text" ? (
+              <pre className="p-2 bg-gray-100 overflow-auto max-h-96 whitespace-pre-wrap text-sm">
+                {previewData.content}
+              </pre>
+            ) : previewData?.type === "image" ? (
+              <img
+                src={`data:${previewData.contentType};base64,${previewData.base64}`}
+                alt="Preview"
+                className="max-w-full max-h-96 rounded shadow"
+              />
+            ) : (
+              <p className="text-sm text-gray-500">
+                {previewData?.message || "Unsupported file type"}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <DeleteFileDialog />
     </div>
