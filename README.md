@@ -4,6 +4,16 @@ Dropcore's frontend is a user interface built with **React** and **Hero.UI**. It
 
 ---
 
+## 🖼️ Screenshots
+
+### 🔹 Landing Page
+<img src="./public/screens/landing.png" alt="Dropcore Landing Page"/>
+
+### 🔹 Dashboard View
+<img src="./public/screens/dashboard.png" alt="Dropcore Dashboard View"/>
+
+---
+
 ## 🧩 Technologies & Stack
 
 - **React** (Vite or CRA depending on setup)
