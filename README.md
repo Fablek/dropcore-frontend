@@ -16,7 +16,7 @@ Dropcore's frontend is a user interface built with **React** and **Hero.UI**. It
 
 ## 🧩 Technologies & Stack
 
-- **React** (Vite or CRA depending on setup)
+- **React (Next.js)** – app routing and page structure
 - **Hero.UI** – modern UI component library built on Tailwind CSS
 - Fetch API for REST communication with backend services via `.env` variables
 - Routing: React Router or framework-integrated (e.g., Next.js)
