@@ -1,53 +1,122 @@
-# Next.js & HeroUI Template
+# 🎨 Dropcore – Frontend
 
-This is a template for creating applications using Next.js 14 (app directory) and HeroUI (v2).
+Dropcore's frontend is a user interface built with **React** and **Hero.UI**. It allows users to register, log in, upload, preview, download, and delete files. It also includes basic static pages like a landing page, contact, blog, and pricing.
 
-[Try it on CodeSandbox](https://githubbox.com/heroui-inc/heroui/next-app-template)
+---
 
-## Technologies Used
+## 🧩 Technologies & Stack
 
-- [Next.js 14](https://nextjs.org/docs/getting-started)
-- [HeroUI v2](https://heroui.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Tailwind Variants](https://tailwind-variants.org)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Framer Motion](https://www.framer.com/motion/)
-- [next-themes](https://github.com/pacocoursey/next-themes)
+- **React** (Vite or CRA depending on setup)
+- **Hero.UI** – modern UI component library built on Tailwind CSS
+- Fetch API for REST communication with backend services via `.env` variables
+- Routing: React Router or framework-integrated (e.g., Next.js)
+- Async/await and modular API wrappers
 
-## How to Use
+---
 
-### Use the template with create-next-app
+## 🧭 Features / User Flow
 
-To create a new project based on this template using `create-next-app`, run the following command:
+- **Landing Page** – informational intro to the project
+- **Authentication** – user registration and login
+- **Dashboard** – file listing view:
+  - See filenames, upload date, and preview supported types (images, PDFs)
+  - Upload new files
+  - Delete and download files
+- **File Preview** – open supported files inline (images, PDF)
+- Static Pages: Contact, Blog, Pricing
 
-```bash
-npx create-next-app -e https://github.com/heroui-inc/next-app-template
-```
+---
 
-### Install dependencies
+## ⚙️ How to Run
 
-You can use one of them `npm`, `yarn`, `pnpm`, `bun`, Example using `npm`:
+1. Install dependencies:
 
 ```bash
 npm install
 ```
 
-### Run the development server
+2. Create a `.env.local` file with the following content:
+
+```
+NEXT_PUBLIC_AUTH_SERVICE_URL=http://localhost:8000
+NEXT_PUBLIC_FILE_SERVICE_URL=http://localhost:5002
+NEXT_PUBLIC_USER_SERVICE_URL=http://localhost:5004
+NEXT_PUBLIC_VIEWER_SERVICE_URL=http://localhost:5005
+```
+
+3. Start the development server:
 
 ```bash
 npm run dev
 ```
 
-### Setup pnpm (optional)
+The app will be available at `http://localhost:3000`.
 
-If you are using `pnpm`, you need to add the following code to your `.npmrc` file:
+---
 
-```bash
-public-hoist-pattern[]=*@heroui/*
+## 🗂️ Project Structure
+
+```
+/src
+├── app              # App-level routing & layout logic (Next.js)
+├── components       # Reusable UI components
+├── config           # App configuration
+├── lib              # API functions (e.g., registerUser, fetchFiles)
+├── styles           # Tailwind & global styles
+├── types            # TypeScript type definitions
 ```
 
-After modifying the `.npmrc` file, you need to run `pnpm install` again to ensure that the dependencies are installed correctly.
+---
 
-## License
+## 🧪 Example API Integration
 
-Licensed under the [MIT license](https://github.com/heroui-inc/next-app-template/blob/main/LICENSE).
+From `lib/auth/registerUser.ts`:
+
+```ts
+export async function registerUser({
+  email,
+  username,
+  password,
+}: {
+  email: string;
+  username: string;
+  password: string;
+}): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_AUTH_SERVICE_URL;
+
+  if (!baseUrl) {
+    throw new Error("Missing NEXT_PUBLIC_AUTH_SERVICE_URL in .env.local");
+  }
+
+  const res = await fetch(`${baseUrl}/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, username, password }),
+  });
+
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(msg || "Registration failed");
+  }
+}
+```
+
+Similar functions exist for login, file upload, deletion, and retrieval.
+
+---
+
+## 👤 Author
+
+Developed as a semester project for the **Information Systems Management** course.
+
+Repository: [github.com/Fablek/dropcore-frontend](https://github.com/Fablek/dropcore-frontend)
+
+---
+
+## ✅ Optional Improvements
+
+- Integrate fully with the backend and test all user flows
+- Add unit tests (e.g., using React Testing Library)
+- Set up a basic CI/CD pipeline for linting, build, and deployment
